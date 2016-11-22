@@ -41,7 +41,7 @@ Java process, as otherwise timestamps obtained using System.nanoTime() are incom
 Instructions for Linux (tested on Ubuntu 14.04):
 
 1. git clone https://github.com/wgolab/WatCA.git
-2. cd WatCA; mvn install
+2. cd WatCA; mvn package
 3. cp samplelogs/execution.log.negative execution.log
 4. ./lintest.sh
 5. cat scores.txt
