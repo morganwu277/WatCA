@@ -6,36 +6,41 @@ cd ${DIR}
 source settings.sh
 source gen_file/config.update
 
+## execute command on servers of servers_public
 run_on_servers() {
     cmd=$1
     signature=$2
-    waitFinish=$3
+    waitFinish=$3 # wait for script return, 0: don't need to wait, e.g. long-live service process; 1: need to wait,e.g. short-time running process
+    targetServerList=$4
 
-    if [ $signature == "loadYCSB" ] || [ $signature == "workYCSB" ]
-    then
-	tunnelopts="-R $ServerLogPort:$ServerIP:$ServerLogPort"
+    echo "$cmd"
+    echo "$signature"
+    echo "$waitFinish"
+    echo "$targetServerList"
+
+    if [ $signature == "loadYCSB" ] || [ $signature == "workYCSB" ]; then
+        tunnelopts="-R $ServerLogPort:$ServerIP:$ServerLogPort"
     else
-	tunnelopts=""
+        tunnelopts=""
     fi
     #echo "Tunnel options: $tunnelopts"
 
-    for host in `cat servers_public`
+    for host in ${targetServerList}
     do
         touch STATE/${host}"."${signature}".ing"
-        (ssh -ax $tunnelopts $RemoteUser@${host} "${cmd}" 1> "STATE/${host}.${signature}.out" `
-        ` 2> "STATE/${host}.${signature}.err";`
-        ` rm "STATE/${host}.${signature}.ing") &
+        (ssh -ax $tunnelopts -i $AWS_SSH_KEY $RemoteUser@${host} "${cmd}" 1> "STATE/${host}.${signature}.out"  \
+                                                                               2> "STATE/${host}.${signature}.err"; \
+                                                                               rm "STATE/${host}.${signature}.ing") &
     done
 
     if [ $waitFinish == 1 ];then
         remain=`ls STATE/*.${signature}.ing 2>/dev/null | wc -l`
-        while [[ $remain != 0 ]];do
-	    if [ $remain == 1 ]
-	    then
-		echo "waiting for ${remain} host"
-	    else
-		echo "waiting for ${remain} hosts"
-	    fi
+        while [ $remain != 0 ]; do
+            if [ $remain == 1 ]; then
+                echo "waiting for ${remain} host"
+            else
+                echo "waiting for ${remain} hosts"
+            fi
             sleep 3
             remain=`ls STATE/*.${signature}.ing 2>/dev/null | wc -l`
         done
@@ -54,7 +59,7 @@ control_kernel_net_delay() {
     fi
     echo $cmd
 
-    run_on_servers "${cmd}" "LinuxDelay" 1
+    run_on_servers "${cmd}" "LinuxDelay" 1 "`cat servers_public servers_public_ycsb`"
     echo "====Kernel network delay setting done!.===="
 }
 
@@ -68,7 +73,7 @@ update_storage_type() {
     elif [ "$type" == "Cassandra2_2" ];then
         cd $ScriptHostCassandraPath
         rm current-version
-        ln -s apache-cassandra-2.2.7 current-version
+        ln -s apache-cassandra-2.2.8 current-version
     else
         echo "Error DB type: "$type
     fi
@@ -79,7 +84,7 @@ kill_db() {
     cmd="cd ${shellPath} && bash control_stub.sh kill"
     echo $cmd
 
-    run_on_servers "${cmd}" "KillDB" 1
+    run_on_servers "${cmd}" "KillDB" 1 "`cat servers_public`"
     echo "NoSQL DB servers stopped."
 }
 
@@ -90,26 +95,27 @@ start_DB() {
     echo $cmd
 
     # the last parameter is not 1, because server will continue running
-    run_on_servers "${cmd}" "startDB" 0
+    run_on_servers "${cmd}" "startDB" 0 "`cat servers_public`"
 
+    # init schema on the seed node, i.e., the first cassandra node.
     seed=`head -n 1 servers_public`
-    ssh -ax $RemoteUser@${seed} "cd ${shellPath} && bash control_stub.sh init_schema"
+    ssh -ax -i $AWS_SSH_KEY $RemoteUser@${seed} "cd ${shellPath} && bash control_stub.sh init_schema"
 
     echo "NoSQL DB server started."
 }
 
 load_YCSB() {
 
-    echo "Generate partion workload files"
+    echo "Generate partition workload files"
     serverNum=`cat servers_public | wc -l`
     countPerHost=`echo ${keyspace} ${serverNum} | awk '{printf "%d", $1 / $2}'`
     update_prop=`echo 1 ${read_prop} | awk '{printf "%f", $1 - $2}'`
 
     start=0
 
-    for public_ip in `cat servers_public`
+    for public_ip in `cat servers_public servers_public_ycsb`
     do
-	host=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
+        host=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
         sed -e s/RECORDCOUNT_Placeholder/${keyspace}/ \
             -e s/READPROPORTION_Placeholder/${read_prop}/ \
             -e s/UPDATEPROPORTION_Placeholder/${update_prop}/ \
@@ -129,7 +135,7 @@ load_YCSB() {
     cmd="cd ${shellPath} && bash control_stub.sh load"
     echo $cmd
 
-    run_on_servers "${cmd}" "loadYCSB" 1
+    run_on_servers "${cmd}" "loadYCSB" 1 "`cat servers_public_ycsb`"
     echo "Done YCSB load."
 
 }
@@ -142,9 +148,9 @@ work_YCSB() {
 
     start=0
 
-    for public_ip in `cat servers_public`
+    for public_ip in `cat servers_public servers_public_ycsb`
     do
-	host=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
+        host=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
         sed -e s/RECORDCOUNT_Placeholder/${keyspace}/ \
             -e s/READPROPORTION_Placeholder/${read_prop}/ \
             -e s/UPDATEPROPORTION_Placeholder/${update_prop}/ \
@@ -164,7 +170,7 @@ work_YCSB() {
     cmd="cd ${shellPath} && bash control_stub.sh workYcsb"
     echo $cmd
 
-    run_on_servers "${cmd}" "workYCSB" 1
+    run_on_servers "${cmd}" "workYCSB" 1 "`cat server_public_ycsb`"
     echo "Done YCSB work phase."
 }
 

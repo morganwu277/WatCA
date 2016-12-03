@@ -62,6 +62,7 @@ interrupted by failures.  Support for the new log format is coming soon.
 ## Development Team
 - Hua Fan - PhD candidate
 - Shankha Chatterjee - MASc candidate
+- Morgan Wu - MEng candidate
 - Wojciech Golab - Assistant Professor (https://ece.uwaterloo.ca/~wgolab/)
 
 ## Related Work

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-USR=ubuntu
+USR=ec2-user
 
 echo Make sure your servers_public file is populated with IPs!
 
 for S in `cat servers_public`
 do
     echo Setting up server $S
-    scp setup_ubuntu.sh $USR@$S:
-    ssh $USR@$S "bash setup_ubuntu.sh"
+    scp -i $AWS_SSH_KEY setup_cassandra.sh $USR@$S:~
+    ssh -i $AWS_SSH_KEY $USR@$S "bash setup_cassandra.sh"
 done

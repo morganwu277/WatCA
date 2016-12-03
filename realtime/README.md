@@ -1,6 +1,6 @@
 # Real-time consistency analysis using WatCA
 
-**Instructions for EC2 and Azure, Ubuntu 14.04 server, Cassandra 2.2.7, YCSB 0.10.0**
+**Instructions for EC2 and Azure, Ubuntu 14.04 server, Cassandra 2.2.8, YCSB 0.10.0**
 
 Step 0: SSH agent
 
