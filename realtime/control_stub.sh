@@ -6,6 +6,7 @@ cd ${DIR}
 source settings.sh
 source gen_file/config.update
 
+# init schema on every cassandra server
 fun_init_schema() {
     echo "Waiting for Cassandra servers to show up/normal status"
 
@@ -82,8 +83,7 @@ fun_start_DB() {
     rm -rf ${CassandraDataPath}/saved_caches/*
 
     # create yaml file
-    # TODO Hua when geo_replication private ip and ip will be different at
-    # listen_address
+    # TODO Hua when geo_replication private ip and ip will be different at listen_address
     seed=`head -n 1 servers_public`
     # cassandra does not allows concurrent join, we set all server as seed
     for host in `tail servers_public -n +2`
@@ -91,7 +91,6 @@ fun_start_DB() {
         seed="$seed, $host"
     done
 
-    #myip=`cat gen_file/myIP`
     public_ip=`cat gen_file/myIP`
     myip=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
     type=$storage_type
@@ -119,9 +118,9 @@ fun_start_DB() {
 }
 
 fun_load_ycsb() {
-    #myip=`cat gen_file/myIP`
     public_ip=`cat gen_file/myIP`
-    myip=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
+    myip=`cat servers_public_private_ycsb | grep $public_ip | awk '{print $2}'`
+    cassandraHost=`cat servers_public |xargs |sed 's/ /,/g'`
     echo "load phase of ycsb:"$myip
     type=$storage_type
     if [ "$type" == "Cassandra2_0" ];then
@@ -132,7 +131,7 @@ fun_load_ycsb() {
             com.yahoo.ycsb.Client -load -db ca.uwaterloo.watca.YCSBConnectorWrapper \
             -p maxexecutiontime=0 -P gen_file/workload".${myip}" \
             -threads $YCSB_threads_for_load \
-            -s -p hosts=$myip
+            -s -p hosts=$cassandraHost
     elif [ "$type" == "Cassandra2_2" ];then
         java -cp "ycsb_wrapper/:${YCSBPath}/current-version/lib/*:${YCSBPath}/current-version/cassandra2-binding/lib/*" \
             -Danalysis.ConnectorClass=com.yahoo.ycsb.db.CassandraCQLClient \
@@ -141,7 +140,7 @@ fun_load_ycsb() {
             com.yahoo.ycsb.Client -load -db ca.uwaterloo.watca.YCSBConnectorWrapper \
             -p maxexecutiontime=0 -P gen_file/workload".${myip}" \
             -threads $YCSB_threads_for_load \
-            -s -p hosts=$myip
+            -s -p hosts=$cassandraHost
     else
         echo "Error DB type: "$type
     fi
@@ -150,7 +149,8 @@ fun_load_ycsb() {
 fun_work_ycsb() {
     #myip=`cat gen_file/myIP`
     public_ip=`cat gen_file/myIP`
-    myip=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
+    myip=`cat servers_public_private_ycsb | grep $public_ip | awk '{print $2}'`
+    cassandraHost=`cat servers_public |xargs |sed 's/ /,/g'`
     echo "work phase of ycsb:"$myip
     type=$storage_type
     if [ "$type" == "Cassandra2_0" ];then
@@ -165,7 +165,7 @@ fun_work_ycsb() {
             -p cassandra.writeconsistencylevel=$write_consistency \
             -p readdelay=$read_delay -p writedelay=$write_delay \
             -p readconprob=$con_prob -p writeconprob=$con_prob \
-            -s -p hosts=$myip
+            -s -p hosts=$cassandraHost
     elif [ "$type" == "Cassandra2_2" ];then
         java -cp "ycsb_wrapper/:${YCSBPath}/current-version/lib/*:${YCSBPath}/current-version/cassandra2-binding/lib/*" \
             -Danalysis.ConnectorClass=com.yahoo.ycsb.db.CassandraCQLClient \
@@ -178,7 +178,7 @@ fun_work_ycsb() {
             -p cassandra.writeconsistencylevel=$write_consistency \
             -p readdelay=$read_delay -p writedelay=$write_delay \
             -p readconprob=$con_prob -p writeconprob=$con_prob \
-            -s -p hosts=$myip
+            -s -p hosts=$cassandraHost
     else
         echo "Error DB type: "$type
     fi

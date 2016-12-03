@@ -11,10 +11,12 @@ run_on_servers() {
     cmd=$1
     signature=$2
     waitFinish=$3 # wait for script return, 0: don't need to wait, e.g. long-live service process; 1: need to wait,e.g. short-time running process
+    targetServerList=$4
 
     echo "$cmd"
     echo "$signature"
     echo "$waitFinish"
+    echo "$targetServerList"
 
     if [ $signature == "loadYCSB" ] || [ $signature == "workYCSB" ]; then
         tunnelopts="-R $ServerLogPort:$ServerIP:$ServerLogPort"
@@ -23,7 +25,7 @@ run_on_servers() {
     fi
     #echo "Tunnel options: $tunnelopts"
 
-    for host in `cat servers_public`
+    for host in ${targetServerList}
     do
         touch STATE/${host}"."${signature}".ing"
         (ssh -ax $tunnelopts -i $AWS_SSH_KEY $RemoteUser@${host} "${cmd}" 1> "STATE/${host}.${signature}.out"  \
@@ -45,6 +47,7 @@ run_on_servers() {
     fi
 }
 
+# for all servers
 control_kernel_net_delay() {
     # from gen_file/config.update
     delay=$kernel_net_delay
@@ -57,7 +60,7 @@ control_kernel_net_delay() {
     fi
     echo $cmd
 
-    run_on_servers "${cmd}" "LinuxDelay" 1
+    run_on_servers "${cmd}" "LinuxDelay" 1 "`cat servers_public servers_public_ycsb`"
     echo "====Kernel network delay setting done!.===="
 }
 
@@ -82,7 +85,7 @@ kill_db() {
     cmd="cd ${shellPath} && bash control_stub.sh kill"
     echo $cmd
 
-    run_on_servers "${cmd}" "KillDB" 1
+    run_on_servers "${cmd}" "KillDB" 1 "`cat servers_public`"
     echo "NoSQL DB servers stopped."
 }
 
@@ -93,7 +96,7 @@ start_DB() {
     echo $cmd
 
     # the last parameter is not 1, because server will continue running
-    run_on_servers "${cmd}" "startDB" 0
+    run_on_servers "${cmd}" "startDB" 0 "`cat servers_public`"
 
     # init schema on the seed node, i.e., the first cassandra node.
     seed=`head -n 1 servers_public`
@@ -103,17 +106,16 @@ start_DB() {
 }
 
 load_YCSB() {
-
     echo "Generate partition workload files"
-    serverNum=`cat servers_public | wc -l`
+    serverNum=`cat servers_public_ycsb | wc -l`
     countPerHost=`echo ${keyspace} ${serverNum} | awk '{printf "%d", $1 / $2}'`
     update_prop=`echo 1 ${read_prop} | awk '{printf "%f", $1 - $2}'`
 
     start=0
 
-    for public_ip in `cat servers_public`
+    for public_ip in `cat servers_public_ycsb`
     do
-        host=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
+        host=`cat servers_public_private_ycsb | grep $public_ip | awk '{print $2}'`
         sed -e s/RECORDCOUNT_Placeholder/${keyspace}/ \
             -e s/READPROPORTION_Placeholder/${read_prop}/ \
             -e s/UPDATEPROPORTION_Placeholder/${update_prop}/ \
@@ -133,22 +135,22 @@ load_YCSB() {
     cmd="cd ${shellPath} && bash control_stub.sh load"
     echo $cmd
 
-    run_on_servers "${cmd}" "loadYCSB" 1
+    run_on_servers "${cmd}" "loadYCSB" 1 "`cat servers_public_ycsb`"
     echo "Done YCSB load."
 
 }
 
 work_YCSB() {
     echo "Generate partion workload files"
-    serverNum=`cat servers_public | wc -l`
+    serverNum=`cat servers_public_ycsb | wc -l`
     countPerHost=`echo ${keyspace} ${serverNum} | awk '{printf "%d", $1 / $2}'`
     update_prop=`echo 1 ${read_prop} | awk '{printf "%f", $1 - $2}'`
 
     start=0
 
-    for public_ip in `cat servers_public`
+    for public_ip in `cat servers_public_ycsb`
     do
-        host=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
+        host=`cat servers_public_private_ycsb | grep $public_ip | awk '{print $2}'`
         sed -e s/RECORDCOUNT_Placeholder/${keyspace}/ \
             -e s/READPROPORTION_Placeholder/${read_prop}/ \
             -e s/UPDATEPROPORTION_Placeholder/${update_prop}/ \
@@ -168,7 +170,7 @@ work_YCSB() {
     cmd="cd ${shellPath} && bash control_stub.sh workYcsb"
     echo $cmd
 
-    run_on_servers "${cmd}" "workYCSB" 1
+    run_on_servers "${cmd}" "workYCSB" 1 "`cat servers_public_ycsb`"
     echo "Done YCSB work phase."
 }
 
