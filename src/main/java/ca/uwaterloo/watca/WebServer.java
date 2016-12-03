@@ -193,13 +193,13 @@ class WebServer {
     private String dumpVars() {
       String ret = "<hr><form method=\"get\">";
       ret += "<input type=\"hidden\" name=\"action\" value=\"updateVars\">" +
-          "<h3>YCSB Workload Settings</h3>" +
+          "<h3>YCSB Workload Settings<a href='https://github.com/brianfrankcooper/YCSB/wiki/Core-Properties' target='_blank'>[?]</a></h3>" +
           "<button type=\"submit\">Update</button>" +
           "<p>Target throughput (ops/s): <input type=\"text\" size=\"6\" name=\"target_thr_per_host\" value=\"" +
           prop.getProperty("target_thr_per_host") + "\"></p>" +
           "<p>Work phase duration (s): <input type=\"text\" size=\"6\" name=\"num_seconds_to_run\" value=\""
           + prop.getProperty("num_seconds_to_run") + "\"></p>" +
-          "<p>Keyspace size: <input type=\"text\" size=\"6\" name=\"keyspace\" value=\"" +
+          "<p>Recordcount size: <input type=\"text\" size=\"6\" name=\"keyspace\" value=\"" +
           prop.getProperty("keyspace") + "\"></p>" +
           "<p>Key distribution: <select name=\"dist\">";
       if (prop.getProperty("dist").equals("uniform"))
@@ -224,7 +224,7 @@ class WebServer {
           + prop.getProperty("read_prop") + "\"></p>" +
           "<p>Hotspot hotset fraction: <input type=\"text\" size=\"6\" name=\"hotspotdatafraction\" value=\""
           + prop.getProperty("hotspotdatafraction") + "\"></p>" +
-          "<h3>YCSB Client Settings</h3>" +
+          "<h3>YCSB Client Settings<a href='https://github.com/brianfrankcooper/YCSB/wiki/Core-Properties' target='_blank'>[?]</a></h3>" +
           "<p>Num threads work phase: <input type=\"text\" size=\"6\" name=\"YCSB_threads\" value=\""
           + prop.getProperty("YCSB_threads") + "\"></p>";
 

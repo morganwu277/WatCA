@@ -1,5 +1,6 @@
 ### Java template
 *.class
+realtime/private_aws_key/*
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
