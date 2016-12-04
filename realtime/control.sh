@@ -12,10 +12,6 @@ run_on_servers() {
     signature=$2
     waitFinish=$3 # wait for script return, 0: don't need to wait, e.g. long-live service process; 1: need to wait,e.g. short-time running process
 
-    echo "$cmd"
-    echo "$signature"
-    echo "$waitFinish"
-
     if [ $signature == "loadYCSB" ] || [ $signature == "workYCSB" ]; then
         tunnelopts="-R $ServerLogPort:$ServerIP:$ServerLogPort"
     else
@@ -106,11 +102,12 @@ load_YCSB() {
 
     echo "Generate partition workload files"
     serverNum=`cat servers_public | wc -l`
-    countPerHost=`echo ${keyspace} ${serverNum} | awk '{printf "%d", $1 / $2}'`
+#    countPerHost=`echo ${keyspace} ${serverNum} | awk '{printf "%d", $1 / $2}'`
+    countPerHost=${keyspace}
     update_prop=`echo 1 ${read_prop} | awk '{printf "%f", $1 - $2}'`
 
     start=0
-
+    mySeq=0
     for public_ip in `cat servers_public`
     do
         host=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
@@ -121,8 +118,10 @@ load_YCSB() {
             -e s/HOTSPOTDATAFRACTION_Placeholder/${hotspotdatafraction}/ \
             -e s/INSERTSTART_Placeholder/${start}/ \
             -e s/INSERTCOUNT_Placeholder/${countPerHost}/ \
+            -e s/SEQ_Placeholder/${mySeq}/ \
             my_workload.template > gen_file/workload".${host}"
-        start=`expr $start + $countPerHost`
+#        start=`expr $start + $countPerHost`
+        let mySeq=$mySeq+1
     done
 
     echo "Sync files to servers"
@@ -145,7 +144,7 @@ work_YCSB() {
     update_prop=`echo 1 ${read_prop} | awk '{printf "%f", $1 - $2}'`
 
     start=0
-
+    mySeq=0
     for public_ip in `cat servers_public`
     do
         host=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
@@ -156,8 +155,10 @@ work_YCSB() {
             -e s/HOTSPOTDATAFRACTION_Placeholder/${hotspotdatafraction}/ \
             -e s/INSERTSTART_Placeholder/${start}/ \
             -e s/INSERTCOUNT_Placeholder/${countPerHost}/ \
+            -e s/SEQ_Placeholder/${mySeq}/ \
             my_workload.template > gen_file/workload".${host}"
         start=`expr $start + $countPerHost`
+        let mySeq=$mySeq+1
     done
 
     echo "Sync files to servers"

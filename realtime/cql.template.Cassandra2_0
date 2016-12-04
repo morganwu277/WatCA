@@ -1,4 +1,4 @@
-create keyspace usertable
+create keyspace usertable_SEQ_Placeholder
 with placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy'
 and strategy_options = {replication_factor: Replication_Factor_Placeholder };
 use usertable;

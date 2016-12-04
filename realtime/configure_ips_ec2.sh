@@ -29,4 +29,3 @@ echo
 echo Wrote public and private IP addresses to servers_public and servers_public_private:
 cat servers_public_private
 
-rm -f servers_public_tmp

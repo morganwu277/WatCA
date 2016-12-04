@@ -26,7 +26,9 @@ public class YCSBConnectorWrapper extends DB {
   static private final String NO_DATA = "no_data";
   static private final Lock lock = new ReentrantLock();
   static private BufferedWriter out;
+  static private BufferedWriter outLocal;
   static private int numThreads = 0;
+  static private String serverId = "";
   private DB innerDB;
   static private long readDelay;
   static private long writeDelay;
@@ -59,6 +61,11 @@ public class YCSBConnectorWrapper extends DB {
   public void init() throws DBException {
     innerDB.init();
 
+    serverId = System.getProperties().getProperty("mySeq");
+    if (serverId == "") {
+      throw new RuntimeException("Please provide mySeq parameter as serverId.");
+    }
+
     try {
       lock.lock();
 
@@ -87,6 +94,9 @@ public class YCSBConnectorWrapper extends DB {
           Socket socket = new Socket(logHost, Integer.parseInt(logPort));
           out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
           System.out.println("Opened log stream: " + logHost + ":" + logPort);
+          System.out.println("Opening log file: " + logFileName);
+          outLocal = new BufferedWriter(new FileWriter(logFileName, true));
+          System.out.println("Opened log file: " + logFileName);
         }
         numThreads++;
       }
@@ -106,6 +116,9 @@ public class YCSBConnectorWrapper extends DB {
       if (out != null) {
         out.flush();
       }
+      if (outLocal != null) {
+        outLocal.flush();
+      }
     } catch (IOException e) {
       throw new DBException("Unable to flush consistency log file.", e);
     } finally {
@@ -120,6 +133,9 @@ public class YCSBConnectorWrapper extends DB {
         lock.lock();
         if (out != null) {
           out.close();
+        }
+        if (outLocal != null) {
+          outLocal.close();
         }
       } catch (IOException e) {
         throw new RuntimeException("Unable to close consistency log file.", e);
@@ -159,7 +175,8 @@ public class YCSBConnectorWrapper extends DB {
     long endTime = System.currentTimeMillis();
     // only log operations that return proper values
     //if (!value.equals("key_not_found"))
-    logOperation("R", key, value, start, finish);
+    logOperation("R", serverId + key, value, start, finish);
+    localLogOperation("R", serverId + key, value, start, finish);
     return ret;
   }
 
@@ -180,7 +197,8 @@ public class YCSBConnectorWrapper extends DB {
     }
     finish = System.currentTimeMillis();
     String value = values2.get(values2.keySet().iterator().next());
-    logOperation("U", key, value, start, finish);
+    logOperation("U", serverId + key, value, start, finish);
+    localLogOperation("U", serverId + key, value, start, finish);
     return ret;
   }
 
@@ -196,7 +214,8 @@ public class YCSBConnectorWrapper extends DB {
     }
     finish = System.currentTimeMillis();
     String value = values2.get(values2.keySet().iterator().next());
-    logOperation("I", key, value, start, finish);
+    logOperation("I", serverId + key, value, start, finish);
+    localLogOperation("I", serverId + key, value, start, finish);
     return ret;
   }
 
@@ -205,25 +224,41 @@ public class YCSBConnectorWrapper extends DB {
     return innerDB.delete(table, key);
   }
 
+  /**
+   * if already used local log, this invocation will immediatedly return without put log locally
+   *
+   * @param operationType
+   * @param key
+   * @param value
+   * @param startTime
+   * @param finishTime
+   */
+  private void localLogOperation(String operationType, String key, String value, long startTime, long finishTime) {
+    String logHost = System.getProperties().getProperty("analysis.LogHost");
+    String logPort = System.getProperties().getProperty("analysis.LogPort");
+    if (logHost == null || logPort == null) { // means it already used a local log, don't use this log any more
+      return;
+    }
+    try {
+      lock.lock();
+      if (outLocal != null) {
+        outLocal.write(logString(operationType, key, value, startTime, finishTime));
+        outLocal.newLine();
+      }
+    } catch (Exception e) {
+      String logFileName = System.getProperties().getProperty("analysis.LogFile");
+      e.printStackTrace();
+      throw new RuntimeException("Unable to write consistency log file " + logFileName, e);
+    } finally {
+      lock.unlock();
+    }
+  }
+
   private void logOperation(String operationType, String key, String value, long startTime, long finishTime) {
     try {
       lock.lock();
       if (out != null) {
-        out.write(key);
-        out.write("\t");
-        if (value.equals(KEY_NOT_FOUND)) {
-          out.write(KEY_NOT_FOUND);
-        } else if (value.equals("")) {
-          out.write(NO_DATA);
-        } else {
-          out.write(sha1(value));
-        }
-        out.write("\t");
-        out.write(String.valueOf(startTime));
-        out.write("\t");
-        out.write(String.valueOf(finishTime));
-        out.write("\t");
-        out.write(operationType);
+        out.write(logString(operationType, key, value, startTime, finishTime));
         out.newLine();
       }
     } catch (Exception e) {
@@ -244,6 +279,30 @@ public class YCSBConnectorWrapper extends DB {
     }
 
     return sb.toString();
+  }
 
+  private String logString(String operationType, String key, String value, long startTime, long finishTime) {
+    StringBuffer res = new StringBuffer();
+    try {
+      res.append(key);
+      res.append("\t");
+      if (value.equals(KEY_NOT_FOUND)) {
+        res.append(KEY_NOT_FOUND);
+      } else if (value.equals("")) {
+        res.append(NO_DATA);
+      } else {
+        res.append(sha1(value));
+      }
+      res.append("\t");
+      res.append(String.valueOf(startTime));
+      res.append("\t");
+      res.append(String.valueOf(finishTime));
+      res.append("\t");
+      res.append(operationType);
+    } catch (NoSuchAlgorithmException e) {
+      e.printStackTrace();
+      throw new RuntimeException("Uable to encode value with sha1 algorithm ", e);
+    }
+    return res.toString();
   }
 }

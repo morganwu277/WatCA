@@ -20,28 +20,36 @@ fun_init_schema() {
     echo "started "${upNum}" servers out of "${totalNum}
 
     public_ip=`cat gen_file/myIP`
-    ip=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
+    cassandraIP=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
     #ip=`cat gen_file/myIP`
-    type=$storage_type
-    sed -e s/Replication_Factor_Placeholder/${replication_factor}/ \
-        cql.template.${type} > gen_file/cassandra.cql.script1
-    result=0
 
-    while [[ $result != 1 ]];do
-        echo "Begin to init schema of cassandra on seed"
-        export CQLSH_NO_BUNDLED=true
-        if [ "$type" == "Cassandra2_0" ];then
-            ${CassandraPath}/current-version/bin/cassandra-cli -h $ip -f gen_file/cassandra.cql.script1
-            result=`${CassandraPath}/current-version/bin/cqlsh $ip -e "SELECT * FROM system.schema_keyspaces" | grep usertable | wc -l`
-        elif [ "$type" == "Cassandra2_2" ];then
-            ${CassandraPath}/current-version/bin/cqlsh $ip -f gen_file/cassandra.cql.script1
-            result=`${CassandraPath}/current-version/bin/cqlsh $ip -e "SELECT * FROM system.schema_keyspaces" | grep ycsb | wc -l`
-        else
-            echo "Error DB type: "$type
-            return
-        fi
-        sleep 3
+    mySeq=0
+    for ip in `cat ./servers_public`; do
+        type=$storage_type
+        sed -e s/Replication_Factor_Placeholder/${replication_factor}/ \
+            -e s/SEQ_Placeholder/${mySeq}/ \
+            cql.template.${type} > gen_file/cassandra.cql.script1.${mySeq}
+        result=0
+
+        while [[ $result != 1 ]];do
+            echo "Begin to init schema "usertable_${mySeq}" of cassandra on seed"
+            export CQLSH_NO_BUNDLED=true
+            if [ "$type" == "Cassandra2_0" ];then
+                ${CassandraPath}/current-version/bin/cassandra-cli -h $cassandraIP -f gen_file/cassandra.cql.script1.${mySeq}
+                result=`${CassandraPath}/current-version/bin/cqlsh $cassandraIP -e "SELECT * FROM system.schema_keyspaces" | grep "usertable_${mySeq}" | wc -l`
+            elif [ "$type" == "Cassandra2_2" ];then
+                ${CassandraPath}/current-version/bin/cqlsh $cassandraIP -f gen_file/cassandra.cql.script1.${mySeq}
+                result=`${CassandraPath}/current-version/bin/cqlsh $cassandraIP -e "DESCRIBE KEYSPACE ycsb" | grep "usertable_${mySeq}" | wc -l`
+            else
+                echo "Error DB type: "$type
+                return
+            fi
+            sleep 3
+        done
+        let mySeq=$mySeq+1
     done
+
+
 
     echo "Schema updated, waiting for servers to synchronize schema"
     for host in `cat servers_public`
@@ -121,11 +129,13 @@ fun_start_DB() {
 fun_load_ycsb() {
     #myip=`cat gen_file/myIP`
     public_ip=`cat gen_file/myIP`
+    mySeq=`cat ~/WatCA/realtime/gen_file/mySeq`
     myip=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
     echo "load phase of ycsb:"$myip
     type=$storage_type
     if [ "$type" == "Cassandra2_0" ];then
         java -cp "ycsb_wrapper/:${YCSBPath}/current-version/lib/*:${YCSBPath}/current-version/cassandra-binding/lib/*" \
+            -DmySeq=${mySeq} \
             -Danalysis.ConnectorClass=com.yahoo.ycsb.db.CassandraClient10 \
             -Danalysis.LogFile=/tmp/not_need_log_file.log \
             -Danalysis.LogHost=localhost  -Danalysis.LogPort=${ServerLogPort} \
@@ -135,6 +145,7 @@ fun_load_ycsb() {
             -s -p hosts=$myip
     elif [ "$type" == "Cassandra2_2" ];then
         java -cp "ycsb_wrapper/:${YCSBPath}/current-version/lib/*:${YCSBPath}/current-version/cassandra2-binding/lib/*" \
+            -DmySeq=${mySeq} \
             -Danalysis.ConnectorClass=com.yahoo.ycsb.db.CassandraCQLClient \
             -Danalysis.LogFile=/tmp/not_need_log_file.log \
             -Danalysis.LogHost=localhost  -Danalysis.LogPort=${ServerLogPort} \
@@ -150,11 +161,13 @@ fun_load_ycsb() {
 fun_work_ycsb() {
     #myip=`cat gen_file/myIP`
     public_ip=`cat gen_file/myIP`
+    mySeq=`cat ~/WatCA/realtime/gen_file/mySeq`
     myip=`cat servers_public_private | grep $public_ip | awk '{print $2}'`
     echo "work phase of ycsb:"$myip
     type=$storage_type
     if [ "$type" == "Cassandra2_0" ];then
         java -cp "ycsb_wrapper/:${YCSBPath}/current-version/lib/*:${YCSBPath}/current-version/cassandra-binding/lib/*" \
+            -DmySeq=${mySeq} \
             -Danalysis.ConnectorClass=com.yahoo.ycsb.db.CassandraClient10 \
             -Danalysis.LogFile=/tmp/not_need_log_file.log \
             -Danalysis.LogHost=localhost  -Danalysis.LogPort=${ServerLogPort} \
@@ -168,6 +181,7 @@ fun_work_ycsb() {
             -s -p hosts=$myip
     elif [ "$type" == "Cassandra2_2" ];then
         java -cp "ycsb_wrapper/:${YCSBPath}/current-version/lib/*:${YCSBPath}/current-version/cassandra2-binding/lib/*" \
+            -DmySeq=${mySeq} \
             -Danalysis.ConnectorClass=com.yahoo.ycsb.db.CassandraCQLClient \
             -Danalysis.LogFile=/tmp/not_need_log_file.log \
             -Danalysis.LogHost=localhost  -Danalysis.LogPort=${ServerLogPort} \

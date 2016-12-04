@@ -18,3 +18,5 @@ hotspotopnfraction=0.8
 
 insertstart=INSERTSTART_Placeholder
 insertcount=INSERTCOUNT_Placeholder
+
+table=usertable_SEQ_Placeholder
