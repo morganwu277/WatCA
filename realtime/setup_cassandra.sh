@@ -15,7 +15,7 @@ sudo systemctl start ntpd
 # install python and cassandra driver
 sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 sudo yum install -y python-pip
-sudo pip install cqlsh
+sudo pip install -U cqlsh
 
 # stop cassandra if running
 cassandra_pid=$(ps auwx | grep cassandra | grep -v grep | awk {'print $2'})

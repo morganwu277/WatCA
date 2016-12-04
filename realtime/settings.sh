@@ -18,10 +18,12 @@ ServerLogPort=12345
 
 # remote WatCA Server root directory, mainly for remote shell scripts and gen_file config_update
 WatcaPath="/home/$RemoteUser/WatCA"
+
 # RemoteCassandraPath
 CassandraPath="/home/$RemoteUser/cassandra"
 # remote cassandra, for clear data
 CassandraDataPath="/var/lib/cassandra"
+
 # remote YCSB Path
 YCSBPath="/home/$RemoteUser/ycsb"
 
