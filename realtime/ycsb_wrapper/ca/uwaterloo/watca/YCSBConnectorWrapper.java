@@ -176,7 +176,7 @@ public class YCSBConnectorWrapper extends DB {
     // only log operations that return proper values
     //if (!value.equals("key_not_found"))
     logOperation("R", serverId + key, value, start, finish);
-    localLogOperation("R", serverId + key, value, start, finish);
+//    localLogOperation("R", serverId + key, value, start, finish);
     return ret;
   }
 
@@ -198,7 +198,7 @@ public class YCSBConnectorWrapper extends DB {
     finish = System.currentTimeMillis();
     String value = values2.get(values2.keySet().iterator().next());
     logOperation("U", serverId + key, value, start, finish);
-    localLogOperation("U", serverId + key, value, start, finish);
+//    localLogOperation("U", serverId + key, value, start, finish);
     return ret;
   }
 
@@ -215,7 +215,7 @@ public class YCSBConnectorWrapper extends DB {
     finish = System.currentTimeMillis();
     String value = values2.get(values2.keySet().iterator().next());
     logOperation("I", serverId + key, value, start, finish);
-    localLogOperation("I", serverId + key, value, start, finish);
+//    localLogOperation("I", serverId + key, value, start, finish);
     return ret;
   }
 

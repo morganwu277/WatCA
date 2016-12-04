@@ -6,6 +6,7 @@ realtime/STATE/*
 realtime/scores.txt
 .idea
 target
+WatCA.iml
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/

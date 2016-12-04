@@ -471,7 +471,7 @@ class WebServer {
         URI requestedUri = t.getRequestURI();
         String query = requestedUri.getRawQuery();
         // TODO current there is one pairs
-        String type = "regular";
+        String type = "gk";
         String ret = "<html><head><style>* { font-family: sans-serif }</style></head> <body >";
         ret += "<div style=\"float: left;\"><b>Consistency metric selection:&nbsp;&nbsp;</b></div>";
         if (query != null) {
