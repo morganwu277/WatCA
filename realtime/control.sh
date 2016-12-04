@@ -12,10 +12,6 @@ run_on_servers() {
     signature=$2
     waitFinish=$3 # wait for script return, 0: don't need to wait, e.g. long-live service process; 1: need to wait,e.g. short-time running process
 
-    echo "$cmd"
-    echo "$signature"
-    echo "$waitFinish"
-
     if [ $signature == "loadYCSB" ] || [ $signature == "workYCSB" ]; then
         tunnelopts="-R $ServerLogPort:$ServerIP:$ServerLogPort"
     else

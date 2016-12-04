@@ -109,7 +109,7 @@ public class RealtimeAnalyzer {
       }
     });
 
-    // now delete old ones
+    // now delete old ones, we don't analyze old values, this is why we get so many score = 2 result
     long timeThreshold = now - COMPUTE_WINDOW_SIZE;
     keyHistMap.values().parallelStream().forEach((h) -> {
       h.deleteOld(timeThreshold);
@@ -188,7 +188,7 @@ public class RealtimeAnalyzer {
     synchronized (outputThroughput) {
       outputThroughput.put(now, thru);
     }
-    System.out.println("Throughput at time " + now + " is " + thru);
+    System.out.println("Throughput at time " + now + " is " + thru + ", operation num: " + numOps);
 
     // Analyze latency.
     long totLat = 0;

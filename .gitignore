@@ -1,6 +1,14 @@
 ### Java template
 *.class
 realtime/private_aws_key/*
+realtime/cassandra/*
+realtime/gen_file/*
+realtime/STATE/*
+realtime/servers_public*
+realtime/scores.txt
+target
+.idea
+*.iml
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
