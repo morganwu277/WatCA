@@ -1,6 +1,11 @@
 ### Java template
 *.class
 realtime/private_aws_key/*
+realtime/gen_file/*
+realtime/STATE/*
+realtime/scores.txt
+.idea
+target
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
