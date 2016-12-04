@@ -15,7 +15,7 @@ if [ -z $ScriptHostWatcaPath ];then
 fi
 
 seq=0
-for host in `cat servers_public servers_public_ycsb`
+for host in `cat servers_public`
 do
     echo "sync files for ${host}"
     if [ "$arg1" == "init" ];then # if update Cassandra Version, this need to be execute, actually just execute the soft link of current-version
