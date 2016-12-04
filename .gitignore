@@ -1,7 +1,6 @@
 ### Java template
 *.class
 realtime/private_aws_key/*
-realtime/cassandra/*
 realtime/gen_file/*
 realtime/STATE/*
 realtime/servers_public*
