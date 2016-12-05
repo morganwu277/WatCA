@@ -1,8 +1,6 @@
 package ca.uwaterloo.watca;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -25,6 +23,14 @@ public class History {
     initCluster.addOperation(initWrite);
     clusterMap.put(INITIAL_VALUE, initCluster);
     clusterSet.add(initCluster);
+  }
+
+  @Override
+  public String toString() {
+    return "History{" +
+        "key='" + key + '\'' +
+        ", clusterMap=" + clusterMap +
+        '}';
   }
 
   public String getKey() {
@@ -73,13 +79,14 @@ public class History {
 
   public synchronized List<Long> getScores(ScoreFunction sfn) {
     List<Long> ret;
-    try {
-      PrintWriter out = new PrintWriter(new FileWriter("scores.txt", true));
+//    try {
+//      PrintWriter out = new PrintWriter(new FileWriter("scores.txt", true));
+      PrintWriter out = new PrintWriter(new OutputStreamWriter(System.out));
       ret = logScores(sfn, out);
-      out.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+//      out.close();
+//    } catch (IOException e) {
+//      throw new RuntimeException(e);
+//    }
     return ret;
   }
 

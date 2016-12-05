@@ -161,7 +161,7 @@ public class Cluster implements Comparable<Cluster> {
 
   public String toString() {
     //key=" + key + " value=" + value + "
-    return "<dwstart=" + dictWrite.getStart() + " dwfin=" + dictWrite.getFinish() + " minf=" + minFinish + " maxs=" + maxStart + ">";
+    return "<dwstart=" + getWriteStart() + " dwfin=" + getWriteFinish() + " minf=" + minFinish + " maxs=" + maxStart + ">";
     //return value;
   }
 }

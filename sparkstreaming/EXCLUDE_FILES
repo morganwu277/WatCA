@@ -1,0 +1,9 @@
+.git
+*.swp
+STATE/
+score.txt
+TEST-ca.uwaterloo.watca.AppTest.xml
+ca.uwaterloo.watca.AppTest.txt
+execution.log*
+.idea
+LocalRunner.scala

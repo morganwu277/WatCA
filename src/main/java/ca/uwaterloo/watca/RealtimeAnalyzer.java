@@ -13,14 +13,17 @@ import java.util.stream.Collectors;
 public class RealtimeAnalyzer {
 
   private final List<Operation> operations;
-  private final SortedMap<Long, Float> outputStaleProp;
-  private final SortedMap<Long, Float> outputStalePropCopy;
   private final SortedMap<Long, List<Long>> outputStaleQuart;
+
+  private final SortedMap<Long, Float> outputStaleProp;
   private final SortedMap<Long, Float> outputThroughput;
-  private final SortedMap<Long, Float> outputThroughputCopy;
   private final SortedMap<Long, Float> outputLatencyAvg;
-  private final SortedMap<Long, Float> outputLatencyAvgCopy;
   private final SortedMap<Long, Float> outputLatency95;
+
+  // for snapshot
+  private final SortedMap<Long, Float> outputStalePropCopy;
+  private final SortedMap<Long, Float> outputThroughputCopy;
+  private final SortedMap<Long, Float> outputLatencyAvgCopy;
   private final SortedMap<Long, Float> outputLatency95Copy;
   private final List<Long> outputSpectrum;
 
@@ -35,15 +38,19 @@ public class RealtimeAnalyzer {
   public RealtimeAnalyzer() {
     operations = new ArrayList();
     numLines = new AtomicInteger();
-    outputStaleProp = new TreeMap();
-    outputStalePropCopy = new TreeMap();
     outputStaleQuart = new TreeMap();
+
     outputThroughput = new TreeMap();
-    outputThroughputCopy = new TreeMap();
+    outputStaleProp = new TreeMap();
     outputLatencyAvg = new TreeMap();
-    outputLatencyAvgCopy = new TreeMap();
     outputLatency95 = new TreeMap();
+
+    // for snapshot
+    outputThroughputCopy = new TreeMap();
+    outputStalePropCopy = new TreeMap();
+    outputLatencyAvgCopy = new TreeMap();
     outputLatency95Copy = new TreeMap();
+
     outputSpectrum = new ArrayList();
     keyHistMap = new ConcurrentHashMap<>();
     // default score function
